@@ -1,111 +1,75 @@
-// admin.js
+const ADMIN_USERNAME = 'admin'; 
+const ADMIN_PASSWORD = 'admin';
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Giả định trong admin.html có các element với id tương ứng
-    const scheduleForm = document.getElementById('schedule-form');
-    const scheduleTableBody = document.querySelector('#schedule-table tbody');
-    const statusMessage = document.getElementById('status-message');
-    let editingId = null; // Biến để lưu ID của công việc đang sửa
+const loginContainer = document.getElementById('login-container');
+const uploadContainer = document.getElementById('upload-container');
 
-    const API_ENDPOINT = '/api/schedule'; // Sử dụng đường dẫn đã rewrite trong netlify.toml
+function login() {
+    const user = document.getElementById('username').value;
+    const pass = document.getElementById('password').value;
+    if (user === ADMIN_USERNAME && pass === ADMIN_PASSWORD) {
+        loginContainer.style.display = 'none';
+        uploadContainer.style.display = 'block';
+    } else {
+        document.getElementById('login-error').textContent = 'Tài khoản hoặc mật khẩu không đúng!';
+    }
+}
 
-    const showStatus = (message, isError = false) => {
-        statusMessage.textContent = message;
-        statusMessage.className = isError? 'error' : 'success';
-        setTimeout(() => { statusMessage.textContent = ''; statusMessage.className = ''; }, 4000);
-    };
+function handleUpload() {
+    const fileInput = document.getElementById('csvFile');
+    const tuanSo = document.getElementById('tuanSoInput').value;
+    const statusDiv = document.getElementById('status');
+    
+    if (!fileInput.files || fileInput.files.length === 0 || !tuanSo) {
+        statusDiv.textContent = 'Vui lòng nhập Tiêu đề và chọn một file.';
+        statusDiv.className = 'error-cell';
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    statusDiv.textContent = 'Đang xử lý file...';
 
-    const renderTable = (schedules) => {
-        scheduleTableBody.innerHTML = '';
-        if (!schedules |
-
-| schedules.length === 0) {
-            scheduleTableBody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Chưa có lịch công tác nào.</td></tr>';
-            return;
+    Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        delimiter: ';',
+        complete: function(results) {
+            const cleanData = results.data.filter(row => Object.values(row).some(val => val !== null && val !== ''));
+            const finalJson = {
+                tuanSo: tuanSo,
+                ngayCapNhat: new Date().toISOString(),
+                lichCongTac: cleanData
+            };
+            updateScheduleSecurely(finalJson);
         }
-        schedules.forEach(item => {
-            const row = scheduleTableBody.insertRow();
-            row.setAttribute('data-id', item.id);
-            row.innerHTML = `
-                <td>${item.date}</td>
-                <td>${item.task}</td>
-                <td>
-                    <button class="edit-btn" data-id="${item.id}" data-date="${item.date}" data-task="${item.task}">Sửa</button>
-                    <button class="delete-btn" data-id="${item.id}">Xóa</button>
-                </td>
-            `;
+    });
+}
+
+async function updateScheduleSecurely(scheduleData) {
+    const statusDiv = document.getElementById('status');
+    statusDiv.textContent = 'Đang gửi dữ liệu lên server an toàn...';
+    statusDiv.className = '';
+
+    try {
+        const response = await fetch('/.netlify/functions/updateSchedule', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(scheduleData)
         });
-    };
 
-    const fetchSchedules = async () => {
-        try {
-            const response = await fetch(API_ENDPOINT);
-            if (!response.ok) throw new Error(`Lỗi mạng: ${response.statusText}`);
-            const { data } = await response.json();
-            renderTable(data);
-        } catch (error) {
-            showStatus('Không thể tải lịch công tác.', true);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || `Server trả về lỗi: ${response.statusText}`);
         }
-    };
+        
+        const result = await response.json();
+        statusDiv.textContent = result.message;
+        statusDiv.className = 'success-cell';
+        document.getElementById('csvFile').value = '';
 
-    scheduleForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const date = document.getElementById('date').value;
-        const task = document.getElementById('task').value;
-        if (!date ||!task) {
-            showStatus('Vui lòng nhập đủ ngày và nội dung.', true);
-            return;
-        }
-
-        const method = editingId? 'PUT' : 'POST';
-        const body = editingId? { id: editingId, date, task } : { date, task };
-
-        try {
-            const response = await fetch(API_ENDPOINT, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-            });
-            if (!response.ok) throw new Error(`Không thể ${editingId? 'cập nhật' : 'thêm mới'}.`);
-            
-            showStatus(`Đã ${editingId? 'cập nhật' : 'thêm mới'} thành công!`);
-            scheduleForm.reset();
-            document.getElementById('form-title').textContent = 'Thêm Lịch Công Tác Mới';
-            editingId = null;
-            fetchSchedules();
-        } catch (error) {
-            showStatus(error.message, true);
-        }
-    });
-
-    scheduleTableBody.addEventListener('click', async (e) => {
-        const target = e.target;
-        const id = target.dataset.id;
-
-        if (target.classList.contains('delete-btn')) {
-            if (!confirm('Bạn có chắc muốn xóa?')) return;
-            try {
-                const response = await fetch(API_ENDPOINT, {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id }),
-                });
-                if (!response.ok) throw new Error('Không thể xóa.');
-                showStatus('Xóa thành công!');
-                fetchSchedules();
-            } catch (error) {
-                showStatus(error.message, true);
-            }
-        }
-
-        if (target.classList.contains('edit-btn')) {
-            editingId = id;
-            document.getElementById('date').value = target.dataset.date;
-            document.getElementById('task').value = target.dataset.task;
-            document.getElementById('form-title').textContent = 'Chỉnh Sửa Công Tác';
-            window.scrollTo(0, 0); // Cuộn lên đầu trang để sửa
-        }
-    });
-
-    fetchSchedules(); // Tải dữ liệu ban đầu
-});
+    } catch (error) {
+        statusDiv.textContent = `Cập nhật thất bại: ${error.message}`;
+        statusDiv.className = 'error-cell';
+        console.error('Lỗi khi gọi serverless function:', error);
+    }
+}

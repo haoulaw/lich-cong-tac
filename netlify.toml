@@ -1,20 +1,2 @@
-# netlify.toml
-
-# Cài đặt Build cơ bản
-[build]
-  # Thư mục chứa các tệp tĩnh (index.html, admin.html, etc.)
-  # Vì các tệp này nằm ở gốc, ta đặt là "."
-  publish = "."
-
-  # Chỉ cho Netlify biết nơi tìm các serverless functions của bạn.
-  functions = "functions"
-
-# Quy tắc chuyển hướng để tạo API endpoint gọn gàng hơn
-[[redirects]]
-  # Mọi yêu cầu tới /api/something
-  from = "/api/*"
-  # Sẽ được chuyển hướng ngầm tới /.netlify/functions/something
-  to = "/.netlify/functions/:splat"
-  # Status 200 có nghĩa là một rewrite, URL trên trình duyệt không đổi.
-  status = 200
-  force = true
+[functions]
+  directory = "functions"

@@ -1,10 +1,5 @@
 {
-  "name": "lich-cong-tac",
-  "version": "1.0.0",
-  "description": "Ứng dụng web Lịch Công Tác với Netlify Functions.",
-  "scripts": {
-    "start": "netlify dev"
-  },
-  "author": "",
-  "license": "ISC"
+  "dependencies": {
+    "node-fetch": "^2.7.0"
+  }
 }

@@ -2,9 +2,9 @@
     --primary-color: #0056b3;
     --border-color: #e0e0e0;
     --day-group-white: #ffffff;
-    --day-group-gray: #eef0f2; /* Màu xám nhạt hơn, dễ chịu hơn */
+    --day-group-gray: #f9fafb;
     --current-day-bg: #fffde7;
-    --current-day-border: #ffea71;
+    --current-day-border: #fbc02d;
 }
 
 body {
@@ -30,42 +30,35 @@ h2 { color: #555; margin-top: -10px; font-weight: 400; }
 #searchInput { flex-grow: 1; padding: 10px; border: 1px solid var(--border-color); border-radius: 5px; }
 #printButton { padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; }
 
-/* === PHẦN SỬA LỖI QUAN TRỌNG CHO BẢNG === */
-
-/* 1. Tạo một khung chứa cuộn cho bảng */
 .table-wrapper {
-    max-height: 70vh; /* Giới hạn chiều cao để thấy hiệu ứng cuộn */
-    overflow-y: auto;   /* Bắt buộc phải có để 'sticky' hoạt động */
+    max-height: 75vh;
+    overflow-y: auto;
     border: 1px solid var(--border-color);
-    position: relative; /* Rất quan trọng cho sticky header */
+    position: relative;
 }
 
 table {
     width: 100%;
-    border-collapse: collapse; /* Gộp các đường viền lại */
+    border-collapse: collapse;
 }
 
-/* 2. Phục hồi lại toàn bộ đường kẻ */
 th, td {
     padding: 14px 16px;
     text-align: left;
     border: 1px solid var(--border-color);
 }
 
-/* 3. Giữ tiêu đề cố định khi cuộn */
 th {
     position: sticky;
     top: 0;
     background-color: var(--primary-color);
     color: white;
-    z-index: 1; /* Đảm bảo tiêu đề luôn nằm trên */
+    z-index: 1;
 }
 
-/* 4. Tô màu nền xen kẽ theo NGÀY */
 tr.day-group-even { background-color: var(--day-group-white); }
 tr.day-group-odd { background-color: var(--day-group-gray); }
 
-/* 5. Hiệu ứng highlight ngày hiện tại */
 tr.current-day {
     background-color: var(--current-day-bg) !important;
 }
@@ -76,16 +69,20 @@ tr.current-day td:first-child {
 
 .meta-info { text-align: right; color: #666; font-size: 0.9em; margin-top: 20px; }
 
-/* 6. Responsive cho thiết bị di động */
+mark.highlight {
+    background-color: #ffeb3b;
+    color: black;
+    padding: 1px 3px;
+    border-radius: 3px;
+}
+
 @media (max-width: 768px) {
     .table-wrapper { 
-        max-height: none; /* Bỏ giới hạn chiều cao trên mobile */
-        overflow-x: auto; /* Chỉ cho cuộn ngang khi cần */
+        max-height: none;
+        overflow-x: auto;
         border: none;
     }
-    th {
-        position: static; /* Bỏ giữ cố định trên mobile để hiển thị dạng thẻ */
-    }
+    th { position: static; }
     table, thead, tbody, th, td, tr { display: block; }
     thead tr { position: absolute; top: -9999px; left: -9999px; }
     tr { border: 1px solid #ccc; margin-bottom: 15px; }
@@ -101,11 +98,4 @@ tr.current-day td:first-child {
         position: absolute; top: 12px; left: 15px; width: 45%;
         padding-right: 10px; white-space: nowrap; text-align: left; font-weight: bold;
     }
-    /* Style cho từ khóa được tìm thấy */
-mark.highlight {
-    background-color: #ffeb3b; /* Màu vàng nổi bật */
-    color: black;
-    padding: 1px 3px;
-    border-radius: 3px;
-}
 }
