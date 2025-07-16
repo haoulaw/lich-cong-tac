@@ -1,0 +1,111 @@
+:root {
+    --primary-color: #0056b3;
+    --border-color: #e0e0e0;
+    --day-group-white: #ffffff;
+    --day-group-gray: #eef0f2; /* Màu xám nhạt hơn, dễ chịu hơn */
+    --current-day-bg: #fffde7;
+    --current-day-border: #ffea71;
+}
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    margin: 0;
+    background-color: #f4f7f9;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 20px auto;
+    background-color: white;
+    padding: 20px 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+h1, h2 { text-align: center; }
+h1 { color: var(--primary-color); }
+h2 { color: #555; margin-top: -10px; font-weight: 400; }
+
+.toolbar { display: flex; gap: 10px; margin: 25px 0; }
+#searchInput { flex-grow: 1; padding: 10px; border: 1px solid var(--border-color); border-radius: 5px; }
+#printButton { padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; }
+
+/* === PHẦN SỬA LỖI QUAN TRỌNG CHO BẢNG === */
+
+/* 1. Tạo một khung chứa cuộn cho bảng */
+.table-wrapper {
+    max-height: 70vh; /* Giới hạn chiều cao để thấy hiệu ứng cuộn */
+    overflow-y: auto;   /* Bắt buộc phải có để 'sticky' hoạt động */
+    border: 1px solid var(--border-color);
+    position: relative; /* Rất quan trọng cho sticky header */
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse; /* Gộp các đường viền lại */
+}
+
+/* 2. Phục hồi lại toàn bộ đường kẻ */
+th, td {
+    padding: 14px 16px;
+    text-align: left;
+    border: 1px solid var(--border-color);
+}
+
+/* 3. Giữ tiêu đề cố định khi cuộn */
+th {
+    position: sticky;
+    top: 0;
+    background-color: var(--primary-color);
+    color: white;
+    z-index: 1; /* Đảm bảo tiêu đề luôn nằm trên */
+}
+
+/* 4. Tô màu nền xen kẽ theo NGÀY */
+tr.day-group-even { background-color: var(--day-group-white); }
+tr.day-group-odd { background-color: var(--day-group-gray); }
+
+/* 5. Hiệu ứng highlight ngày hiện tại */
+tr.current-day {
+    background-color: var(--current-day-bg) !important;
+}
+tr.current-day td:first-child {
+    border-left: 4px solid var(--current-day-border);
+    font-weight: bold;
+}
+
+.meta-info { text-align: right; color: #666; font-size: 0.9em; margin-top: 20px; }
+
+/* 6. Responsive cho thiết bị di động */
+@media (max-width: 768px) {
+    .table-wrapper { 
+        max-height: none; /* Bỏ giới hạn chiều cao trên mobile */
+        overflow-x: auto; /* Chỉ cho cuộn ngang khi cần */
+        border: none;
+    }
+    th {
+        position: static; /* Bỏ giữ cố định trên mobile để hiển thị dạng thẻ */
+    }
+    table, thead, tbody, th, td, tr { display: block; }
+    thead tr { position: absolute; top: -9999px; left: -9999px; }
+    tr { border: 1px solid #ccc; margin-bottom: 15px; }
+    td {
+        border: none;
+        border-bottom: 1px solid #eee;
+        position: relative;
+        padding-left: 50%;
+        text-align: right;
+    }
+    td:before {
+        content: attr(data-label);
+        position: absolute; top: 12px; left: 15px; width: 45%;
+        padding-right: 10px; white-space: nowrap; text-align: left; font-weight: bold;
+    }
+    /* Style cho từ khóa được tìm thấy */
+mark.highlight {
+    background-color: #ffeb3b; /* Màu vàng nổi bật */
+    color: black;
+    padding: 1px 3px;
+    border-radius: 3px;
+}
+}
