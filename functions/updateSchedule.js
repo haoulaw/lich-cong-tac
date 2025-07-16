@@ -1,47 +1,76 @@
-exports.handler = async function(event) {
-    if (event.httpMethod !== 'POST') {
-        return { statusCode: 405, body: 'Method Not Allowed' };
-    }
+// functions/schedule.js
 
-    try {
-        const scheduleData = JSON.parse(event.body);
-        const GIST_ID = process.env.GITHUB_GIST_ID;
-        const GITHUB_TOKEN = process.env.GITHUB_API_TOKEN;
+// Cơ sở dữ liệu tạm thời trong bộ nhớ
+let tasks = [
+  { id: '1', date: '2025-07-18', task: 'Họp team dự án' },
+  { id: '2', date: '2025-07-19', task: 'Hoàn thành báo cáo tháng' }
+];
+let nextId = 3;
 
-        if (!GIST_ID || !GITHUB_TOKEN) {
-            return { statusCode: 500, body: JSON.stringify({ error: "Gist ID hoặc GitHub Token chưa được cấu hình trên Netlify." }) };
-        }
+// Headers để xử lý lỗi CORS
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+};
 
-        // Dòng code này được thêm lại để gọi thư viện node-fetch
-        const fetch = (await import('node-fetch')).default;
-        
-        const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': `token ${GITHUB_TOKEN}`,
-                'Accept': 'application/vnd.github.v3+json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                files: { 'schedule.json': { content: JSON.stringify(scheduleData, null, 2) } }
-            })
+export default async (request, context) => {
+  // Xử lý yêu cầu preflight của trình duyệt cho CORS
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: CORS_HEADERS
+    });
+  }
+
+  try {
+    switch (request.method) {
+      case 'GET': {
+        return new Response(JSON.stringify({ data: tasks }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json',...CORS_HEADERS }
         });
+      }
 
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`Lỗi từ GitHub (${response.status}): ${errorBody}`);
+      case 'POST': {
+        const { date, task } = await request.json();
+        const newTask = { id: String(nextId++), date, task };
+        tasks.push(newTask);
+        return new Response(JSON.stringify({ message: 'Created', data: newTask }), {
+          status: 201,
+          headers: { 'Content-Type': 'application/json',...CORS_HEADERS }
+        });
+      }
+
+      case 'PUT': {
+        const { id, task } = await request.json();
+        const taskIndex = tasks.findIndex(t => t.id === id);
+        if (taskIndex === -1) {
+          return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404, headers: { 'Content-Type': 'application/json',...CORS_HEADERS } });
         }
+        tasks[taskIndex].task = task;
+        return new Response(JSON.stringify({ message: 'Updated', data: tasks[taskIndex] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json',...CORS_HEADERS }
+        });
+      }
 
-        return {
-            statusCode: 200,
-            body: JSON.stringify({ message: 'Cập nhật lịch công tác thành công!' })
-        };
+      case 'DELETE': {
+        const { id } = await request.json();
+        tasks = tasks.filter(t => t.id!== id);
+        return new Response(JSON.stringify({ message: 'Deleted', id }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json',...CORS_HEADERS }
+        });
+      }
 
-    } catch (error) {
-        console.error('Lỗi trong serverless function:', error);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ error: error.message })
-        };
+      default:
+        return new Response("Method Not Allowed", { status: 405, headers: CORS_HEADERS });
     }
+  } catch (error) {
+    return new Response(JSON.stringify({ message: 'Internal Server Error', error: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json',...CORS_HEADERS }
+    });
+  }
 };
