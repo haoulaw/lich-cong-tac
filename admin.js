@@ -1,75 +1,35 @@
-const ADMIN_USERNAME = 'admin'; 
-const ADMIN_PASSWORD = 'admin';
+// admin.js (Phiên bản cuối cùng)
 
-const loginContainer = document.getElementById('login-container');
-const uploadContainer = document.getElementById('upload-container');
+async function updateSchedule(newContent) {
+  // URL bây giờ là một đường dẫn tương đối đến function của bạn
+  const API_URL = '/.netlify/functions/update-schedule';
+  const API_KEY = 'Amin@giadinh@2025'; // Phải giống hệt giá trị bạn đã cài đặt trên Netlify
 
-function login() {
-    const user = document.getElementById('username').value;
-    const pass = document.getElementById('password').value;
-    if (user === ADMIN_USERNAME && pass === ADMIN_PASSWORD) {
-        loginContainer.style.display = 'none';
-        uploadContainer.style.display = 'block';
-    } else {
-        document.getElementById('login-error').textContent = 'Tài khoản hoặc mật khẩu không đúng!';
-    }
-}
-
-function handleUpload() {
-    const fileInput = document.getElementById('csvFile');
-    const tuanSo = document.getElementById('tuanSoInput').value;
-    const statusDiv = document.getElementById('status');
-    
-    if (!fileInput.files || fileInput.files.length === 0 || !tuanSo) {
-        statusDiv.textContent = 'Vui lòng nhập Tiêu đề và chọn một file.';
-        statusDiv.className = 'error-cell';
-        return;
-    }
-    
-    const file = fileInput.files[0];
-    statusDiv.textContent = 'Đang xử lý file...';
-
-    Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        delimiter: ';',
-        complete: function(results) {
-            const cleanData = results.data.filter(row => Object.values(row).some(val => val !== null && val !== ''));
-            const finalJson = {
-                tuanSo: tuanSo,
-                ngayCapNhat: new Date().toISOString(),
-                lichCongTac: cleanData
-            };
-            updateScheduleSecurely(finalJson);
-        }
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+      },
+      body: JSON.stringify({ content: newContent }),
     });
-}
 
-async function updateScheduleSecurely(scheduleData) {
-    const statusDiv = document.getElementById('status');
-    statusDiv.textContent = 'Đang gửi dữ liệu lên server an toàn...';
-    statusDiv.className = '';
+    const result = await response.json();
 
-    try {
-        const response = await fetch('/.netlify/functions/updateSchedule', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(scheduleData)
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText || `Server trả về lỗi: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        statusDiv.textContent = result.message;
-        statusDiv.className = 'success-cell';
-        document.getElementById('csvFile').value = '';
-
-    } catch (error) {
-        statusDiv.textContent = `Cập nhật thất bại: ${error.message}`;
-        statusDiv.className = 'error-cell';
-        console.error('Lỗi khi gọi serverless function:', error);
+    if (!response.ok) {
+      alert(`Lỗi: ${result.message}`);
+    } else {
+      alert('Cập nhật lịch công tác thành công!');
     }
+  } catch (error) {
+    console.error('Lỗi khi gọi Netlify Function:', error);
+    alert('Lỗi nghiêm trọng: Không thể kết nối đến API.');
+  }
 }
+
+// Gắn sự kiện cho nút "Lưu"
+document.getElementById('save-button').addEventListener('click', () => {
+  const scheduleContent = document.getElementById('schedule-editor').value;
+  updateSchedule(scheduleContent);
+});
